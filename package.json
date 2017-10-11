@@ -1,0 +1,35 @@
+{
+  "name": "merge-ordered-data-stream",
+  "version": "1.0.0",
+  "description": "merge sorted data from multi streams.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arthurgyh/merge-ordered-data-stream.git"
+  },
+  "keywords": [
+    "node.js",
+    "stream",
+    "sort",
+    "merge",
+    "multi"
+  ],
+  "author": "arthurgyh",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Arthurgyh/merge-ordered-data-stream/issues"
+  },
+  "homepage": "https://github.com/Arthurgyh/merge-ordered-data-stream#readme",
+  "devDependencies": {
+    "assert-callback": "^0.1.0",
+    "mocha": "^4.0.1",
+    "through2": "^2.0.3"
+  },
+  "dependencies": {
+    "binarysearch": "^1.0.0",
+    "glob": "^7.1.2"
+  }
+}
