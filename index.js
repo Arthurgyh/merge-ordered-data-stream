@@ -85,12 +85,13 @@ const AgentOpt={
     fd: null,
     mode: 0o666,
     autoClose: true,
-    highWaterMark: Math.pow(2, 16) // 64k
+    objectMode:true,
+    highWaterMark: 1024//Math.pow(2, 16) // 64k
 //ObjectMode:true,
 //highWaterMark: 1
 };
 
-
+//wait_cnt = 1;
 class AgentWritable extends Writable {
     constructor(merger,options) {
         super(options);
@@ -102,6 +103,13 @@ class AgentWritable extends Writable {
     }
 
     _write(chunk, encoding, callback) {
+        if(chunk.length < 2){
+            console.log(chunk,chunk.length, this._writableState.writecb, typeof this._writableState.writecb);
+            this._writableState.writecb();
+            //throw new Error("unknow...")
+            callback();
+        };
+
         //debuglog_detail('agent[%d] get data....[%s]',this.id, chunk);
         this._transform_cb = callback;
         this.merger.back_push(this.id, chunk, encoding, callback);
@@ -115,8 +123,6 @@ class AgentWritable extends Writable {
         if(this.wait_ind >= this.wait_cnt){
             if (self._transform_cb) {
                 self._transform_cb();
-                //delete self._transform_cb;
-                //self.resume();
             }
             this.wait_ind = 0;
         }
@@ -162,7 +168,14 @@ function add(steams) {
 MergeReadStream.prototype.connect=function(reader, agent){
     //debuglog_detail('1 connect....');
     if(this.prepare && typeof this.prepare == 'function'){
-        reader.pipe(this.prepare()).pipe(agent);
+        var t_p = this.prepare();
+        if(Array.isArray(t_p)){
+            let [t_in, t_out] =  t_p;
+            reader.pipe(t_in);
+            t_out.pipe(agent);
+        }else{
+            reader.pipe(t_p).pipe(agent);
+        }
     }else{
         reader.pipe(agent);
     }
@@ -181,7 +194,7 @@ MergeReadStream.prototype.start=function(){
     this.started=true;
 };
 
-MergeReadStream.prototype.add_glob=function(str, options){
+MergeReadStream.prototype.add_glob=function(str, file_options){
     if(str == null || str == undefined){
         return;
     }
@@ -192,9 +205,9 @@ MergeReadStream.prototype.add_glob=function(str, options){
     var total = files.length;
     console.log(`Found ${total} flies:`);
 
-    for(var i=0;i++;i){
+    for(var i=0;i<total;i++){
         console.log(` ${i}.- ${files[i]}`);
-        var fread = fs.createReadStream(files[i], config.readOpts);
+        var fread = fs.createReadStream(files[i], file_options);
         this.add(fread);
     }
 };
@@ -332,6 +345,7 @@ MergeReadStream.prototype._check_imp=function (n){
     if(ended_cnt === total && this.sort_buf.length == 0){
         //dump_stack();
         if(!this.stoping){
+            console.log();
             console.error('all src end + cleared buffer., it\'s time stop...' +
                 '(waiting cnt R[%d]G[%d]W[%d]T[%d]S[%d])'
                 , this.read_cnt, this.read_get_cnt, this.read_wait_cnt, this.read_retry_cnt, this.read_resume_cnt);
@@ -399,6 +413,9 @@ MergeReadStream.prototype._read_imp = function _read_imp(n,many){
                 return;
             }
         }else {
+            // if(chunk.slice(0,32) == '0000017374C318ED1F8B7639FC38222B'){
+            //     console.log("merged from agent[%d] to send %s",id, chunk);
+            // }
             if(this.reading){
                 //debuglog_detail('merge status become readable.');
                 this.reading = false;
