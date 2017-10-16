@@ -6,6 +6,7 @@ var bs = require('binarysearch');
 var glob = require("glob");
 const debuglog_detail = util.debuglog('detail');
 const debuglog = util.debuglog('merge');
+var _ = require('lodash');
 
 
 
@@ -275,6 +276,8 @@ function read_nt(self, n, many){
     self._read_imp(n, many);
 }
 
+const read_nt_debounce = _.debounce(read_nt,1)
+
 MergeReadStream.prototype.do_merge_buf = function(id,step, next_able){
     if(this.sort_sts[id] == sort_sts.empty){
         var data = this._pick_src_buf(id);
@@ -291,7 +294,7 @@ MergeReadStream.prototype.do_merge_buf = function(id,step, next_able){
         }
         if(this.reading && next_able){
             //debuglog_detail("%s nextTick read_nt:[%d] ", step, id);
-            process.nextTick(read_nt, this, 1, false);
+            process.nextTick(read_nt_debounce, this, 1, false);
         }
     }else{
         //debuglog_detail("%s agent not waiting:[%d] ", step, id);
